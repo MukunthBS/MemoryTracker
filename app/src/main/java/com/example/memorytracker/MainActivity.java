@@ -2,22 +2,37 @@ package com.example.memorytracker;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Debug;
+import android.os.Handler;
+import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatRadioButton;
+
 import java.io.*;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends Activity {
+
+    int interval;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,46 +40,73 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final TextView txt = (TextView) findViewById(R.id.txt);
-        txt.setText(getMemoryInfo());
+        final Handler handler = new Handler();
+        final Runnable[] runnable = new Runnable[1];
+        final AppCompatEditText inputInterval = findViewById(R.id.setInterval);
+        final Button button1 = findViewById(R.id.start_btn);
+        final Button button2 = findViewById(R.id.stop_btn);
+        final Button button3 = findViewById(R.id.set_btn);
+        final AppCompatRadioButton radio1 = findViewById(R.id.yes);
+        final AppCompatRadioButton radio2 = findViewById(R.id.no);
+        radio1.setChecked(true);
 
-        final TextView txt2 = (TextView) findViewById(R.id.process);
-        txt2.setText(getProcessInfo());
+        RadioGroup rg = (RadioGroup) findViewById(R.id.radio_group);
+        rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener()
+        {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId)
+            {
+                switch(checkedId)
+                {
+                    case R.id.yes:
+                        inputInterval.setFocusableInTouchMode(true);
+                        inputInterval.setEnabled(true);
+                        inputInterval.setFocusable(true);
+                        inputInterval.setHintTextColor(Color.rgb(255,255,255));
 
+                        break;
 
-        final TextView txt4 = (TextView) findViewById(R.id.home);
+                    case R.id.no:
+                        inputInterval.setEnabled(false);
+                        inputInterval.setFocusable(false);
+                        inputInterval.setHintTextColor(Color.rgb(128,128,128));
 
-        final Button button1 = findViewById(R.id.tot_btn);
-        final Button button2 = findViewById(R.id.pro_btn);
+                        break;
+                }
+            }
+        });
 
-        final Button button4 = findViewById(R.id.re_btn);
 
         button1.setOnClickListener(v -> {
-            txt.setVisibility(View.VISIBLE);
-            txt2.setVisibility(View.GONE);
 
-            txt4.setVisibility(View.GONE);
+            Toast.makeText(getApplicationContext(), "Starting memory capture...", Toast.LENGTH_SHORT).show();
+
+
+            final int delay = interval * 1000;
+
+            handler.postDelayed(runnable[0] = new Runnable() {
+                public void run() {
+                    getInfo();
+                    handler.postDelayed(this, delay);
+                }
+            }, delay);
         });
 
         button2.setOnClickListener(v -> {
-            txt.setVisibility(View.GONE);
-            txt2.setVisibility(View.VISIBLE);
+            Toast.makeText(getApplicationContext(), "Memory capture stopped!", Toast.LENGTH_SHORT).show();
 
-            txt4.setVisibility(View.GONE);
+            handler.removeCallbacks(runnable[0]);
         });
 
-
-        button4.setOnClickListener(v -> {
-            // finish();
-            // overridePendingTransition(0, 0);
-            // startActivity(getIntent());
-            // overridePendingTransition(0, 0);
-
-            getMemoryInfo();
-            getProcessInfo();
-
+        button3.setOnClickListener(v -> {
+            try {
+                String sample = inputInterval.getText().toString();
+                interval = Integer.parseInt(sample);
+                Toast.makeText(getApplicationContext(), "Interval set to " + String.valueOf(interval) + " seconds.", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
-
     }
 
     private String getMemoryInfo() {
@@ -161,5 +203,14 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
     }
+
+    private void getInfo() {
+        getMemoryInfo();
+        getProcessInfo();
+        Toast.makeText(getApplicationContext(),"Fetching memory info...",Toast.LENGTH_SHORT).show();
+    }
+
+
+
 
 }
