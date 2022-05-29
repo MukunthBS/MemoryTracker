@@ -8,6 +8,15 @@
     tools:context=".MainActivity">
 
     <Button
+        android:id="@+id/reset_btn"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="600sp"
+        android:text="CLEAR CAPTURES" />
+
+    <Button
         android:id="@+id/start_btn"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
@@ -31,32 +40,44 @@
         android:layout_width="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="200sp"
+        android:layout_marginBottom="225sp"
         android:text="SET" />
+
+    <TextView
+        android:id="@+id/interval"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="175sp"
+        android:textSize="16sp"
+        android:textColor="#fff"
+        android:text="Current Interval: 0 seconds" />
+
 
 
     <androidx.appcompat.widget.AppCompatEditText
         android:id="@+id/setInterval"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="250sp"
+        android:layout_marginBottom="275sp"
         android:textColor="@color/white"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
         android:textAlignment="center"
         android:textSize="16sp"
-        android:focusable="true"
+        android:focusable="false"
         android:ems="10"
         android:inputType="number"
         app:backgroundTint="@color/white"
         android:hint="Set Interval (in seconds)"
-        android:textColorHint="@color/white"/>
+        android:textColorHint="#808080"/>
 
     <RadioGroup
         android:id="@+id/radio_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="350sp"
+        android:layout_marginBottom="375sp"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
         >
@@ -79,7 +100,7 @@
         android:layout_marginBottom="20sp"
         android:textColor="@color/white"
         app:buttonTint="@color/white"
-        android:text="Without Interval" />
+        android:text="Without Interval (capture once)" />
 
     <androidx.appcompat.widget.AppCompatRadioButton
         android:id="@+id/yes"
@@ -88,7 +109,7 @@
         android:textSize="15sp"
         android:textColor="@color/white"
         app:buttonTint="@color/white"
-        android:text="With Interval" />
+        android:text="With Interval (continuous capture)" />
     </RadioGroup>
 
 

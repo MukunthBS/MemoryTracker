@@ -1,16 +1,14 @@
 package com.example.memorytracker;
+
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.Handler;
-import android.text.InputType;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,17 +16,16 @@ import android.widget.Toast;
 import androidx.appcompat.widget.AppCompatEditText;
 import androidx.appcompat.widget.AppCompatRadioButton;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MainActivity extends Activity {
 
@@ -46,33 +43,29 @@ public class MainActivity extends Activity {
         final Button button1 = findViewById(R.id.start_btn);
         final Button button2 = findViewById(R.id.stop_btn);
         final Button button3 = findViewById(R.id.set_btn);
-        final AppCompatRadioButton radio1 = findViewById(R.id.yes);
+        final Button button4 = findViewById(R.id.reset_btn);
         final AppCompatRadioButton radio2 = findViewById(R.id.no);
-        radio1.setChecked(true);
+        final TextView intervalText = findViewById(R.id.interval);
 
-        RadioGroup rg = (RadioGroup) findViewById(R.id.radio_group);
-        rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener()
-        {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId)
-            {
-                switch(checkedId)
-                {
-                    case R.id.yes:
-                        inputInterval.setFocusableInTouchMode(true);
-                        inputInterval.setEnabled(true);
-                        inputInterval.setFocusable(true);
-                        inputInterval.setHintTextColor(Color.rgb(255,255,255));
+        radio2.setChecked(true);
 
-                        break;
-
-                    case R.id.no:
-                        inputInterval.setEnabled(false);
-                        inputInterval.setFocusable(false);
-                        inputInterval.setHintTextColor(Color.rgb(128,128,128));
-
-                        break;
-                }
+        RadioGroup rg = findViewById(R.id.radio_group);
+        rg.setOnCheckedChangeListener((group, checkedId) -> {
+            if(checkedId == R.id.yes) {
+                inputInterval.setFocusableInTouchMode(true);
+                inputInterval.setEnabled(true);
+                inputInterval.setFocusable(true);
+                inputInterval.setTextColor(Color.rgb(255,255,255));
+                inputInterval.setHintTextColor(Color.rgb(255,255,255));
+            }
+            else if (checkedId == R.id.no) {
+                inputInterval.setEnabled(false);
+                inputInterval.setFocusable(false);
+                interval = 0;
+                String intervalTxt = "Current Interval: " + interval + " seconds";
+                intervalText.setText(intervalTxt);
+                inputInterval.setTextColor(Color.rgb(128,128,128));
+                inputInterval.setHintTextColor(Color.rgb(128,128,128));
             }
         });
 
@@ -81,15 +74,19 @@ public class MainActivity extends Activity {
 
             Toast.makeText(getApplicationContext(), "Starting memory capture...", Toast.LENGTH_SHORT).show();
 
+            if(interval != 0) {
+                final int delay = interval * 1000;
 
-            final int delay = interval * 1000;
-
-            handler.postDelayed(runnable[0] = new Runnable() {
-                public void run() {
-                    getInfo();
-                    handler.postDelayed(this, delay);
-                }
-            }, delay);
+                handler.postDelayed(runnable[0] = new Runnable() {
+                    public void run() {
+                        getInfo();
+                        handler.postDelayed(this, delay);
+                    }
+                }, delay);
+            }
+            else {
+                getInfo();
+            }
         });
 
         button2.setOnClickListener(v -> {
@@ -100,16 +97,37 @@ public class MainActivity extends Activity {
 
         button3.setOnClickListener(v -> {
             try {
-                String sample = inputInterval.getText().toString();
+                String sample = Objects.requireNonNull(inputInterval.getText()).toString();
                 interval = Integer.parseInt(sample);
-                Toast.makeText(getApplicationContext(), "Interval set to " + String.valueOf(interval) + " seconds.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Interval set to " + interval + " seconds.", Toast.LENGTH_SHORT).show();
+                String intervalTxt = "Current Interval: " + interval + " seconds";
+                intervalText.setText(intervalTxt);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+
+        button4.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("Clear Captures")
+                .setMessage("Are you sure you want to clear previous captures?")
+                .setIcon(android.R.drawable.ic_menu_delete)
+                .setPositiveButton(android.R.string.yes, (dialog, whichButton) -> {
+                    File dir = getApplicationContext().getExternalFilesDir(null);
+                    File file1 = new File(dir, "meminfo.txt");
+                    File file2 = new File(dir, "pss.txt");
+
+                    if(file1.delete() && file2.delete()){
+                        Toast.makeText(MainActivity.this, "Captures cleared!", Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        Toast.makeText(MainActivity.this, "No captures found!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton(android.R.string.no, null).show());
+
     }
 
-    private String getMemoryInfo() {
+    private void getMemoryInfo() {
 
         ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
@@ -131,7 +149,6 @@ public class MainActivity extends Activity {
         long runtimeFree = runtime.freeMemory();
         long runtimeUsed = runtimeTotal - runtimeFree;
 
-        String heading = "ActivityManager.MemoryInfo" + "\n" + "____________" + "\n\n";
 
         String content = "Total Memory : " + systemTotal + " kB\n" +
                 "Free Memory : " + systemFree + " kB\n" +
@@ -146,10 +163,9 @@ public class MainActivity extends Activity {
 
         writeToFile(getApplicationContext(), "meminfo.txt", content);
 
-        return heading + content;
     }
 
-    private String getProcessInfo() {
+    private void getProcessInfo() {
 
         ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> runningAppProcesses = activityManager.getRunningAppProcesses();
@@ -161,7 +177,7 @@ public class MainActivity extends Activity {
         }
         Collection<Integer> keys = pidMap.keySet();
         StringBuilder builder = new StringBuilder();
-        String heading = "ActivityManager.RunningAppProcessInfo" + "\n" + "____________" + "\n\n";
+
         for(int key : keys)
         {
             int[] pids = new int[1];
@@ -183,9 +199,8 @@ public class MainActivity extends Activity {
             }
         }
         writeToFile(getApplicationContext(), "pss.txt", builder.toString());
-        return  heading + builder;
-    }
 
+    }
 
     private void writeToFile(Context context, String filename, String content) {
         File path = context.getExternalFilesDir(null);
@@ -209,8 +224,5 @@ public class MainActivity extends Activity {
         getProcessInfo();
         Toast.makeText(getApplicationContext(),"Fetching memory info...",Toast.LENGTH_SHORT).show();
     }
-
-
-
 
 }
